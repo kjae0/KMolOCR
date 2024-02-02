@@ -17,17 +17,18 @@ class EfficientNetV2Large(nn.Module):
         # output shape -> [B, 1280, 15, 15]
         self.feature_extractor = IntermediateLayerGetter(self.model, return_layers={"features": "feature"})
         self.output_channel = 1280
-        self.output_size = 15 * 15
+        self.output_size = None
         
     def forward(self, x):
         """
         input: B x 3 x input size x input size
-        output: B x 1280 x 225
+        output: B x (output width * output height) x 1280 
         """
         B = x.shape[0]
         
         out = self.feature_extractor(x)['feature']
-        out = out.view(B, self.output_channel, self.output_size)
+        out = out.view(B, self.output_channel, -1)
+        out = out.permute(0, 2, 1)
         
         return out
 

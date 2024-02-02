@@ -1,0 +1,19 @@
+"model_configuration":
+    "decoder_layers": 6
+    "attention_heads": 8
+    "d_model": 512
+    "ff_dim": 2048
+    "dropout": 0.1
+"image_specs": 
+    "img_feature_channels": 1280
+"embedding":
+    "size": 512
+    "embedding_dim": 512
+
+"vocab_size": None
+"SOS_idx": 0
+"EOS_idx": 1
+"PAD_idx": 2
+"max_len": 100
+"half": True
+"gradient_clip": 10
