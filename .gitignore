@@ -3,6 +3,7 @@
 *.jpg
 *.csv
 *.json
+*.pt
 data/*
 
 # Byte-compiled / optimized / DLL files
