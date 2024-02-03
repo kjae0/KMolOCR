@@ -11,22 +11,26 @@
     "embedding_dim": 512
 
 "vocab_size": None
-"SOS_idx": 0
-"EOS_idx": 1
-"PAD_idx": 2
 "max_len": 100
 "half": True
 "gradient_clip": 10
 "img_size": 480
-"img_dir": "/home/diya/Public/Image2Smiles/docker_mount/images"
-"smiles_dir": "/home/diya/Public/Image2Smiles/docker_mount/smiles_cleansed"
-"vocab_dir": "/home/diya/Public/Image2Smiles/docker_mount/TOKENMAP_seed_3609_max200smiles.json"
+"img_dir": "/data/jaeyeong/KMolOCR_renew/data/images"
+"smiles_dir": "/data/jaeyeong/KMolOCR_renew/data/smiles_cleansed"
+"vocab_dir": "/data/jaeyeong/KMolOCR_renew/data/TOKENMAP_seed_3609_max200smiles.json"
+# "img_dir": "/home/diya/Public/Image2Smiles/docker_mount/images"
+# "smiles_dir": "/home/diya/Public/Image2Smiles/docker_mount/smiles_cleansed"
+# "vocab_dir": "/home/diya/Public/Image2Smiles/docker_mount/TOKENMAP_seed_3609_max200smiles.json"
+
 "test": True
 "batch_size": 36
 "num_workers": 16
 "device": "cuda"
+"lr": 0.001
+"weight_decay": 0.000001
+"T_max": 300
+"eta_min": 0
+"num_epochs": 10
 
-# data validation
-# dataset
 # utils
 # overall debugging

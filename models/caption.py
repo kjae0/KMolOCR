@@ -8,9 +8,10 @@ import time
 import sys
 import os
 
-import encoder
-import decoder
+from models import encoder
+from models import decoder
 
+import utils
 
 class Caption(nn.Module):
     def __init__(self, config):
@@ -24,6 +25,10 @@ class Caption(nn.Module):
         
     def forward(self, x, tgt, tgt_padding_mask=None, tgt_mask=None):
         img_feature = self.encoder(x)
+        
+        if tgt_mask == None:
+            tgt_mask = utils.set_up_causal_mask(tgt.shape[-1]).to(dtype=x.dtype, device=x.device)
+            
         out = self.decoder(tgt, img_feature, tgt_padding_mask, tgt_mask)
         
         return out

@@ -1,14 +1,15 @@
+from torch import optim
+from torch.utils.data import DataLoader
+from torchvision.transforms import transforms
+
 import torch
 import torch.nn as nn
-
+import pandas as pd
+import yaml
+import json
 import os
 import argparse
 
-from torch import optim
-from torch.utils.data import DataLoader
-import pandas as pd
-from torchvision.transforms import transforms
-import yaml
 
 from models import caption
 import utils
@@ -17,7 +18,15 @@ import dataset
 
 def main(args):
     with open(args.cfg_dir, "r") as f:
-        cfg = yaml.loa(f, yaml.Loader)
+        cfg = yaml.load(f, yaml.Loader)
+    
+    with open(cfg['vocab_dir'], "r") as f:
+        vocab = json.load(f)
+        
+    cfg['SOS_idx'] = vocab['<sos>']
+    cfg['PAD_idx'] = vocab['<pad>']
+    cfg['EOS_idx'] = vocab['<eos>']
+    cfg['UNK_idx'] = vocab['<unk>']
     
     smiles_transform = transforms.Compose([
             torch.LongTensor
@@ -25,7 +34,8 @@ def main(args):
 
     img_transform = transforms.Compose([
         transforms.Resize((cfg['img_size'], cfg['img_size'])),
-        # transforms.ToTensor()
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ])
 
     dset = dataset.ImageSmilesDataset(img_dir=cfg['img_dir'],
@@ -46,7 +56,10 @@ def main(args):
     test_smiles = dset.smiles[int(len(dset)*0.8):]
     train_dset = dataset.ImageSmilesContainer(train_images, train_smiles, dset.smiles_transform, load_later=dset.load_later, img_transform=dset.img_transform)
     test_dset = dataset.ImageSmilesContainer(test_images, test_smiles, dset.smiles_transform, load_later=dset.load_later, img_transform=dset.img_transform)
-    cfg['vocab_size'] = len(dset.df) + 3
+    cfg['vocab_size'] = len(dset.vocab)
+    
+    print(f"\nTrain dataset size: {len(train_dset)}")
+    print(f"Test dataset size: {len(test_dset)}")
     
     model = caption.Caption(cfg)
     criterion = nn.CrossEntropyLoss()
@@ -70,7 +83,7 @@ def main(args):
     model = model.to(cfg['device'])
     model = nn.DataParallel(model)
                 
-    train.train(args,
+    train.train(cfg,
                 model=model,
                 optimizer=optimizer,
                 criterion=criterion,

@@ -47,6 +47,7 @@ class ImageSmilesDataset(data.Dataset):
         self.smiles_transform = smiles_transform
         self.img_transform = img_transform
         self.load_later = load_later
+        self.pad_idx = pad_idx
         
         if test:
             self.img_dir_lst = [self.img_dir_lst[0]]
@@ -79,7 +80,7 @@ class ImageSmilesDataset(data.Dataset):
             self.smiles.extend(smiles)
             
         if test:
-            self.smiles = self.smiles[:test]
+            self.smiles = self.smiles[:len(self.images)]
             
         if max_len:
             self.long_smiles_idx.sort(reverse=True)
@@ -97,30 +98,23 @@ class ImageSmilesDataset(data.Dataset):
         print(f"dataset size : {len(self.images)}")
         print(f"vocabulary size : {len(self.vocab)}")
         
-    def __getitem__(self, index):
-        # return self.images[index], self.smiles_transform(self.smiles[index])
-        return transforms.ToTensor()(self.images[index]), self.smiles_transform(self.smiles[index])
+    def __getitem__(self, idx):
+        img = self.img_transform(Image.open(self.images[idx]).convert("RGB"))
+        smiles = self.smiles_transform(self.smiles[idx])
+        pad_mask = smiles == self.pad_idx
+        return img, smiles, pad_mask
     
     def __len__(self):
         return len(self.images)
 
-
-class ImageSmilesContainer(data.Dataset):
-    def __init__(self, images, smiles, smiles_transform, load_later, img_transform=None):
+class ImageSmilesContainer(ImageSmilesDataset):
+    def __init__(self, images, smiles, smiles_transform, load_later, img_transform=None, pad_idx=2):
         self.images = images
         self.smiles = smiles
         self.smiles_transform = smiles_transform
         self.load_later = load_later
         self.img_transform = img_transform
-        
-    def __getitem__(self, index):
-        if self.load_later:
-            image = Image.open(self.images[index]).convert("RGB")
-            image = self.img_transform(image)            
-            return transforms.ToTensor()(image), self.smiles_transform(self.smiles[index])
-        else:        
-            return transforms.ToTensor()(self.images[index]), self.smiles_transform(self.smiles[index])
-        # return self.images[index], self.smiles_transform(self.smiles[index])
+        self.pad_idx = pad_idx
     
     def __len__(self):
         return len(self.images)

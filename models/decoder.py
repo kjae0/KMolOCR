@@ -96,7 +96,7 @@ class CaptionDecoder(nn.Module):
 
         self.res_block = ResidualBlock(d_model)
 
-        self.positional_encodings = PositionalEncoding(config["max_len"], d_model, dropout)
+        self.positional_encodings = PositionalEncoding(config["max_len"]-1, d_model, dropout)
         transformer_decoder_layer = TransformerDecoderLayer(
             d_model=d_model,
             nhead=attention_heads,

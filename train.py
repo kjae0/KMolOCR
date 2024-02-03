@@ -33,24 +33,26 @@ def train(cfg,
         loss_per_epoch = 0
         model.train()    
 
-        for batch_id, (img, tgt, tgt_padding_mask) in tqdm(enumerate(dataloader), total=len(dataloader), desc=f"{epoch} training...", ncols=60):
+        for batch_id, (img, tgt, tgt_padding_mask) in tqdm(enumerate(dataloader), total=len(dataloader), desc=f"{epoch} training...", ncols=100):
             
             # img = torch.zeros((5, 3, 480, 480)).half().cuda()
 # tgt = torch.zeros((5, 100)).long().cuda()
 # tgt_padding_mask = torch.zeros((5, 100)).bool().cuda()
 # tgt_mask = set_up_causal_mask(100, 'cuda').half()
-            tgt_mask = utils.set_up_causal_mask(cfg['max_len'])
+            # tgt_mask = utils.set_up_causal_mask(cfg['max_len']-1)
             if cfg['half']:
                 img = img.half()
-                tgt_mask.half()
+                # tgt_mask.half()
                 
             img = img.to(device)
             tgt = tgt.long().to(device)
             input_tgt = tgt[:, :-1].to(device)
             gt_tgt = tgt[:, 1:].to(device)
-            tgt_padding_mask = tgt_padding_mask.bool().to(device)
-            tgt_mask = tgt_mask.to(device)
+            tgt_padding_mask = tgt_padding_mask[:, :-1].bool().to(device)
+            # tgt_mask = tgt_mask.to(device)
+            tgt_mask = None
             
+            # print(img.shape, input_tgt.shape, tgt_padding_mask.shape, tgt_mask.shape)
             # output -> B x max_len x vocab_size
             output = model(img, input_tgt, 
                         tgt_padding_mask, tgt_mask)
