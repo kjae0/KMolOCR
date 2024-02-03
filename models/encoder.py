@@ -7,12 +7,9 @@ import torch.nn as nn
 
 
 class EfficientNetV2Large(nn.Module):
-    def __init__(self, half=False):
+    def __init__(self):
         super(EfficientNetV2Large, self).__init__()
         self.model = efficientnet_v2_l(weight=EfficientNet_V2_L_Weights.DEFAULT)
-        
-        if half:
-            self.model = self.model.half()
         
         # output shape -> [B, 1280, 15, 15]
         self.feature_extractor = IntermediateLayerGetter(self.model, return_layers={"features": "feature"})

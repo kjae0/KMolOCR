@@ -16,19 +16,14 @@ import utils
 class Caption(nn.Module):
     def __init__(self, config):
         super(Caption, self).__init__()
-        self.is_half = config['half']
-        self.encoder = encoder.EfficientNetV2Large(half=self.is_half)
+        self.encoder = encoder.EfficientNetV2Large()
         self.decoder = decoder.CaptionDecoder(config)
-        
-        if self.is_half:
-            self.decoder = self.decoder.half()
         
     def forward(self, x, tgt, tgt_padding_mask=None, tgt_mask=None):
         img_feature = self.encoder(x)
         
         if tgt_mask == None:
             tgt_mask = utils.set_up_causal_mask(tgt.shape[-1]).to(dtype=x.dtype, device=x.device)
-            
         out = self.decoder(tgt, img_feature, tgt_padding_mask, tgt_mask)
         
         return out

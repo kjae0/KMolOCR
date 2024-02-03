@@ -12,25 +12,35 @@
 
 "vocab_size": None
 "max_len": 100
-"half": True
-"gradient_clip": 10
-"img_size": 480
-"img_dir": "/data/jaeyeong/KMolOCR_renew/data/images"
-"smiles_dir": "/data/jaeyeong/KMolOCR_renew/data/smiles_cleansed"
-"vocab_dir": "/data/jaeyeong/KMolOCR_renew/data/TOKENMAP_seed_3609_max200smiles.json"
-# "img_dir": "/home/diya/Public/Image2Smiles/docker_mount/images"
-# "smiles_dir": "/home/diya/Public/Image2Smiles/docker_mount/smiles_cleansed"
-# "vocab_dir": "/home/diya/Public/Image2Smiles/docker_mount/TOKENMAP_seed_3609_max200smiles.json"
+"mixed_precision": True
+"gradient_clip": 5
+"img_size": 400
+# "img_dir": "/data/jaeyeong/KMolOCR_renew/data/images"
+# "smiles_dir": "/data/jaeyeong/KMolOCR_renew/data/smiles_cleansed"
+# "vocab_dir": "/data/jaeyeong/KMolOCR_renew/data/TOKENMAP_seed_3609_max200smiles.json"
+"img_dir": "/mount/images"
+"smiles_dir": "/mount/smiles_cleansed"
+"vocab_dir": "/mount/TOKENMAP_seed_3609_max200smiles.json"
 
-"test": True
-"batch_size": 36
-"num_workers": 16
+"test": False
+"batch_size": 28
+"num_workers": 32
 "device": "cuda"
-"lr": 0.001
+"lr": 0.003
 "weight_decay": 0.000001
-"T_max": 300
-"eta_min": 0
 "num_epochs": 10
+"seed": 42
+
+# cosine annealing
+"T_max": 10000
+"eta_min": 0
+
+# cosine annealing warmup restart
+"T_0": 10000
+"T_mult": 2
+"eta_max": 0.003
+"T_up": 50
+"gamma": 0.9
 
 # utils
 # overall debugging

@@ -48,6 +48,7 @@ class ImageSmilesDataset(data.Dataset):
         self.img_transform = img_transform
         self.load_later = load_later
         self.pad_idx = pad_idx
+        self.max_len = max_len
         
         if test:
             self.img_dir_lst = [self.img_dir_lst[0]]
@@ -56,7 +57,7 @@ class ImageSmilesDataset(data.Dataset):
             img_ds = os.listdir(os.path.join(img_dir, img_d))
             img_ds.sort()
             
-            for d in tqdm(img_ds, desc=f"load images from {img_d} ({idx+1}/{len(self.img_dir_lst)})", total=len(img_ds), ncols=60):
+            for d in tqdm(img_ds, desc=f"load images from {img_d} ({idx+1}/{len(self.img_dir_lst)})", total=len(img_ds), ncols=100):
                 if load_later:
                     self.images.append(os.path.join(img_dir, img_d, d))
                 else:
@@ -64,7 +65,7 @@ class ImageSmilesDataset(data.Dataset):
                     image = img_transform(image)
                     self.images.append(image)
 
-        for idx, smiles_d in enumerate(self.smiles_dir_lst):
+        for idx, smiles_d in tqdm(enumerate(self.smiles_dir_lst), desc="loading smiles...", total=len(self.smiles_dir_lst), ncols=100):
             df = pd.read_csv(os.path.join(smiles_dir, smiles_d))
             smiles = list(df['SMILES'])
             
@@ -76,21 +77,32 @@ class ImageSmilesDataset(data.Dataset):
                     if len(smiles[i]) > max_len - 2:
                         self.long_smiles_idx.append(i + len(self.smiles))
             
-            smiles = [utils.smiles_processer(s, max_len, sos_idx, eos_idx, pad_idx, self.vocab) for s in smiles]
             self.smiles.extend(smiles)
             
         if test:
-            self.smiles = self.smiles[:len(self.images)]
+            self.images = self.images[:test]
+            self.smiles = self.smiles[:test]
             
         if max_len:
-            self.long_smiles_idx.sort(reverse=True)
-            for i in self.long_smiles_idx:
+            self.long_smiles_idx = self.long_smiles_idx[::-1]
+            self.long_smiles_idx_set = set(self.long_smiles_idx)
+            # self.long_smiles_idx.sort(reverse=True)
+            new_smiles = []
+            new_images = []
+            for i in range(len(self.smiles)):
                 try:
-                    del self.smiles[i]
-                    del self.images[i]
+                    # del self.smiles[i]
+                    # del self.images[i]
+                    if i in self.long_smiles_idx_set:
+                        continue
+                    new_smiles.append(self.smiles[i])
+                    new_images.append(self.images[i])
                 except IndexError:
                     if test:
                         continue
+                
+            self.smiles = new_smiles
+            self.images = new_images
                 
         if len(self.images) != len(self.smiles):
             raise ValueError(f"difference image and smiles size. {len(self.images)} / {len(self.smiles)}")
@@ -100,7 +112,8 @@ class ImageSmilesDataset(data.Dataset):
         
     def __getitem__(self, idx):
         img = self.img_transform(Image.open(self.images[idx]).convert("RGB"))
-        smiles = self.smiles_transform(self.smiles[idx])
+        smiles = utils.smiles_processer(self.smiles[idx], self.max_len, self.sos_idx, self.eos_idx, self.pad_idx, self.vocab)
+        smiles = self.smiles_transform(smiles)
         pad_mask = smiles == self.pad_idx
         return img, smiles, pad_mask
     
@@ -108,14 +121,23 @@ class ImageSmilesDataset(data.Dataset):
         return len(self.images)
 
 class ImageSmilesContainer(ImageSmilesDataset):
-    def __init__(self, images, smiles, smiles_transform, load_later, img_transform=None, pad_idx=2):
+    def __init__(self, images, smiles, smiles_transform, load_later, vocab, max_len, img_transform=None):
         self.images = images
         self.smiles = smiles
         self.smiles_transform = smiles_transform
         self.load_later = load_later
         self.img_transform = img_transform
-        self.pad_idx = pad_idx
+        self.pad_idx = vocab['<pad>']
+        self.sos_idx = vocab['<sos>']
+        self.eos_idx = vocab['<eos>']
+        self.vocab = vocab
+        self.max_len = max_len
     
     def __len__(self):
         return len(self.images)
     
+    
+# data validation
+# Nan
+# data augmentation
+# eval
