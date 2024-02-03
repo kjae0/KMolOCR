@@ -4,30 +4,42 @@ from PIL import Image
 from tqdm import tqdm
 
 import pandas as pd
+import json
 import utils
 import os
 
-def build_vocab(df):
-    vocab = {}
-    vocab_retrieve = {2:'<pad>',
-                      0:'<sos>',
-                      1:'<eos>'}
-    for i in range(len(df)):
-        vocab[df['character'].iloc[i]] = df['number'].iloc[i]   
-        vocab_retrieve[df['number'].iloc[i]] = df['character'].iloc[i] 
-    return vocab, vocab_retrieve
+def build_vocab(vocab):
+    """
+    vocab: json type, {"character": index}
+    """
+    
+    vocab_c2i = vocab
+    vocab_i2c = {}
+    
+    for k, v in vocab_c2i.items():
+        vocab_i2c[v] = k
+    
+    return vocab_c2i, vocab_i2c
 
 
 class ImageSmilesDataset(data.Dataset):
-    def __init__(self, img_dir, smiles_dir, img_transform, smiles_transform, sos_idx, pad_idx, eos_idx, max_len, vocab_dir, test=None,
+    def __init__(self, img_dir, 
+                 smiles_dir, 
+                 img_transform, 
+                 smiles_transform, 
+                 sos_idx, pad_idx, eos_idx, max_len, vocab_dir, 
+                 test=None,
                  load_later=False):
-        # super().__init__()
+        
         self.img_dir_lst = os.listdir(img_dir)
         self.smiles_dir_lst = os.listdir(smiles_dir)
         self.img_dir_lst.sort()
         self.smiles_dir_lst.sort()
-        self.df = pd.read_csv(vocab_dir)
-        self.vocab, self.vocab_retrieve = build_vocab(self.df)
+        
+        with open(vocab_dir, "r") as f:
+            self.vocab = json.load(f)
+        
+        self.vocab, self.vocab_i2c = build_vocab(self.vocab)
         
         self.long_smiles_idx = []
         self.images = []
@@ -42,8 +54,7 @@ class ImageSmilesDataset(data.Dataset):
         for idx, img_d in enumerate(self.img_dir_lst):
             img_ds = os.listdir(os.path.join(img_dir, img_d))
             img_ds.sort()
-            if test:
-                img_ds = img_ds[:test]
+            
             for d in tqdm(img_ds, desc=f"load images from {img_d} ({idx+1}/{len(self.img_dir_lst)})", total=len(img_ds), ncols=60):
                 if load_later:
                     self.images.append(os.path.join(img_dir, img_d, d))
@@ -58,11 +69,11 @@ class ImageSmilesDataset(data.Dataset):
             
             if test and len(self.smiles) > test:
                 break
-            
+        
             if max_len:
                 for i in range(len(smiles)):
-                    if len(smiles[i]) > max_len-2:
-                        self.long_smiles_idx.append(i + len(df)*idx)
+                    if len(smiles[i]) > max_len - 2:
+                        self.long_smiles_idx.append(i + len(self.smiles))
             
             smiles = [utils.smiles_processer(s, max_len, sos_idx, eos_idx, pad_idx, self.vocab) for s in smiles]
             self.smiles.extend(smiles)

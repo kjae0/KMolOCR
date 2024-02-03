@@ -17,3 +17,16 @@
 "max_len": 100
 "half": True
 "gradient_clip": 10
+"img_size": 480
+"img_dir": "/home/diya/Public/Image2Smiles/docker_mount/images"
+"smiles_dir": "/home/diya/Public/Image2Smiles/docker_mount/smiles_cleansed"
+"vocab_dir": "/home/diya/Public/Image2Smiles/docker_mount/TOKENMAP_seed_3609_max200smiles.json"
+"test": True
+"batch_size": 36
+"num_workers": 16
+"device": "cuda"
+
+# data validation
+# dataset
+# utils
+# overall debugging
