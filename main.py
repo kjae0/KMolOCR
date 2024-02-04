@@ -88,7 +88,9 @@ def main(args):
                                                         #  T_up=cfg['T_up'],
                                                         #  gamma=cfg['gamma']
                                                         #  )
-
+    optimizer = [encoder_optimizer, decoder_optimizer]
+    scheduler = [encoder_scheduler, decoder_scheduler]
+    
     dataloader = DataLoader(train_dset,
                             batch_size=cfg['batch_size'],
                             shuffle=True,
@@ -106,6 +108,27 @@ def main(args):
     model = model.to(cfg['device'])
     model = nn.DataParallel(model)
                 
+    if cfg['state_dict_dir']:
+        print(f"\nLoad state dict from {cfg['state_dict_dir']}")
+        state_dict = torch.load(cfg['state_dict_dir'])
+        model.load_state_dict(state_dict['model'])
+        
+        for idx, opt_sd in enumerate(state_dict['optimizer']):
+            optimizer[idx].load_state_dict(opt_sd)
+            
+        for idx, sche_sd in enumerate(state_dict['scheduler']):
+            scheduler[idx].load_state_dict(sche_sd)
+        # scheduler.load_state_dict(state_dict['scheduler'])
+        
+        seed = state_dict['seed']
+        random.setstate(seed['random'])
+        np.random.set_state(seed['numpy'])
+        torch.set_rng_state(seed['pytorch'])
+        torch.cuda.set_rng_state(seed['pytorch_cuda'])
+        
+    else:
+        print(f"No state dict.")
+                
     # train.train(cfg,
     #             model=model,
     #             optimizer=optimizer,
@@ -115,12 +138,12 @@ def main(args):
     #             scheduler=scheduler)
     train.train(cfg,
                 model=model,
-                optimizer=[encoder_optimizer, decoder_optimizer],
+                optimizer=optimizer,
                 criterion=criterion,
                 dataloader=dataloader,
                 val_dataloader=test_dataloader,
-                scheduler=[encoder_scheduler, decoder_scheduler])
-        
+                scheduler=scheduler)
+            
     return None    
     
 if __name__ == "__main__":

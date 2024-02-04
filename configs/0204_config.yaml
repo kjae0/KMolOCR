@@ -42,8 +42,8 @@
 "T_up": 50
 "gamma": 0.9
 
-"state_dict_dir": False
-"eval_first": False
+"state_dict_dir": "/mount/KMolOCR/2024-02-03_13_43_42/1_2.pt"
+"eval_first": True
 
 # utils
 # overall debugging

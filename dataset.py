@@ -53,11 +53,11 @@ class ImageSmilesDataset(data.Dataset):
         if test:
             self.img_dir_lst = [self.img_dir_lst[0]]
         
-        for idx, img_d in enumerate(self.img_dir_lst):
+        for idx, img_d in tqdm(enumerate(self.img_dir_lst), desc=f"load images...", total=len(self.img_dir_lst), ncols=100):
             img_ds = os.listdir(os.path.join(img_dir, img_d))
             img_ds.sort()
             
-            for d in tqdm(img_ds, desc=f"load images from {img_d} ({idx+1}/{len(self.img_dir_lst)})", total=len(img_ds), ncols=100):
+            for d in img_ds:
                 if load_later:
                     self.images.append(os.path.join(img_dir, img_d, d))
                 else:

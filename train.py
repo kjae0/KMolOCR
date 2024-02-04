@@ -134,7 +134,10 @@ def train(cfg,
             if (batch_id+1) % eval_unit == 0:
                 test.evaluate(cfg, model, criterion, val_dataloader, cfg['PAD_idx'])
                 model.train()
-
+                  
+            if cfg['eval_first'] and epoch == batch_id == 0:
+                test.evaluate(cfg, model, criterion, val_dataloader, cfg['PAD_idx'])
+                model.train()
 
 # test eval
 # wandb

@@ -67,11 +67,11 @@ def evaluate(cfg,
             crt_smiles += cs.item()
             wrg_smiles += ws.item()
             
-        print("character unit accuracy: ", crt_char, wrg_char, crt_char/wrg_char)
-        print("smiles unit accuracy: ", crt_smiles, wrg_smiles, crt_smiles/wrg_smiles)
+        print("character unit accuracy: ", crt_char, wrg_char, crt_char/(crt_char+wrg_char))
+        print("smiles unit accuracy: ", crt_smiles, wrg_smiles, crt_smiles/(crt_smiles+wrg_smiles))
         
-        wandb.log({"character unit accuracy": crt_char/wrg_char})
-        wandb.log({"smiles unit accuracy": crt_smiles/wrg_smiles})
+        wandb.log({"character unit accuracy": crt_char/(crt_char+wrg_char)})
+        wandb.log({"smiles unit accuracy": crt_smiles/(crt_smiles+wrg_smiles)})
             
         print("prediction")
         print(prediction[:5], sep="\n")
