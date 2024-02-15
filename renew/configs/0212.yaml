@@ -1,0 +1,32 @@
+vocab_dir : "/mount/vocabulary.csv"
+img_dir : "/mount/images"
+smiles_dir : "/mount/smiles_cleansed"
+max_len : 100
+train_batch_size : 16
+test_batch_size : 48
+device : "cuda"
+encoder : "efficientnet_v2_l"
+num_epochs : 9
+input_size : 400
+
+lr : 0.001
+weight_decay : 0.000001
+
+T_max : 10000
+eta_min : 0
+
+num_workers : 32
+train_ratio : 0.9
+
+test: False
+
+# log_dir : "/mount/0212"    
+save_ckpt_dir : "/mount/model_ckpt/0212_effb7_model"
+load_ckpt_dir: "/mount/model_ckpt/0712_effb5_model/1_141509.pt"
+partial_training: False
+wandb_run_name: "0212_training"
+
+print_interval: 30
+save_interval: 10000
+eval_interval: 50000
+eval_limit: 10000
