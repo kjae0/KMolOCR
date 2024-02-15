@@ -1,0 +1,62 @@
+model_configuration:
+    attention_heads: 8
+    d_model: 512
+    ff_dim: 2048
+    dropout: 0.1
+    transformer_decoder_only: False
+    encoder_layers: 3
+    decoder_layers: 3
+    encoder: "b7"
+image_specs: 
+    img_feature_channels: 2560
+embedding:
+    size: 512
+    embedding_dim: 512
+
+vocab_size: None
+max_len: 100
+mixed_precision: True
+gradient_clip: 5
+img_size: 400
+
+img_dir: "/mount/images"
+smiles_dir: "/mount/smiles_cleansed"
+vocab_dir: "/mount/TOKENMAP_seed_3609_max200smiles.json"
+
+test: False
+batch_size: 28
+num_workers: 32
+device: "cuda"
+lr: 0.001
+weight_decay: 0
+num_epochs: 10
+seed: 222
+save_interval: 100
+eval_interval: 20
+print_interval: 30
+wandb_run_name: "0207_new_dec_end-to-end–2dpe"
+
+decoder_lr_factor: 5
+# scheduler: "CosineAnnealingWarmUpRestarts"
+scheduler: "CosineAnnealing"
+
+# cosine annealing
+T_max: 10000
+eta_min: 0
+
+# cosine annealing warmup restart
+T_0: 10000
+T_mult: 1
+eta_max: 0.001
+T_up: 100
+gamma: 0.8
+
+state_dict_dir: "/mount/KMolOCR/ckpt/2024-02-07_11_12_42/1_3.pt"
+load_optimizer: False
+eval_first: False
+gradient_scaler: True
+
+partial_training: False
+    # train_part: 'decoder'
+# utils
+# overall debugging
