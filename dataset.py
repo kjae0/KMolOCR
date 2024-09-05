@@ -1,14 +1,30 @@
 from PIL import Image
 from tqdm import tqdm
-
-from torch.utils import data
+from torch.utils.data import Dataset, Subset
 
 import os
 import pandas as pd
 import torch
+import processor
 
 
-class ImageDataset(data.Dataset):
+def build_dataset(cfg, vocab, train_ratio, *args, **kwargs):
+    img_processor, smiles_processor, postprocessor = processor.get_processors(cfg, vocab)
+    origin_dset = ImageDataset(*args, **kwargs)
+    split_idx = int(len(origin_dset) * train_ratio)
+        
+    train_dset = Subset(images=origin_dset.images[:split_idx],
+                                smiles=origin_dset.smiles[:split_idx],
+                                origin_dset=origin_dset)
+
+    test_dset = Subset(images=origin_dset.images[split_idx:],
+                               smiles=origin_dset.smiles[split_idx:],
+                               origin_dset=origin_dset)
+    
+    return train_dset, test_dset
+
+
+class ImageDataset(Dataset):
     def __init__(self, img_dir, 
                  smiles_dir,
                  img_transform=None,
@@ -58,66 +74,29 @@ class ImageDataset(data.Dataset):
             raise ValueError(f"Image and SMILES must have same size! got {len(self.images)}, {len(self.smiles)}")
             
     def __getitem__(self, idx):
+        try:
+            img = Image.open(os.path.join(self.img_dir, self.images[idx])).convert("RGB")
+            tgt = self.smiles[idx]
+        except:
+            print("\n", self.images[idx])
+            img = Image.open(os.path.join(self.img_dir, self.images[0])).convert("RGB")
+            tgt = self.smiles[0]
         
-        img = Image.open(os.path.join(self.img_dir, self.images[idx])).convert("RGB")
-        tgt = self.smiles[idx]
+        # tgt_len = torch.LongTensor([100]).unsqueeze(0)
+        tgt_len = torch.LongTensor([len(tgt) + 2]).unsqueeze(0)
 
         if self.img_transform:
             img = self.img_transform(img)
         if self.smiles_transform:
             tgt = self.smiles_transform(tgt)
             
-        return img, tgt
-    
-    def __len__(self):
-        return len(self.images)
-    
-    
-class ImageContainer(ImageDataset):
-    def __init__(self, images, smiles, origin_dset:ImageDataset):
-        self.images = images
-        self.smiles = smiles
-        self.origin_dset = origin_dset
-        
-    def __getitem__(self, idx):
-        try:
-            img = Image.open(os.path.join(self.origin_dset.img_dir, self.images[idx])).convert("RGB")
-            tgt = self.smiles[idx]
-        except:
-            print("\n", self.images[idx])
-            img = Image.open(os.path.join(self.origin_dset.img_dir, self.images[0])).convert("RGB")
-            tgt = self.smiles[0]
-        
-        # tgt_len = torch.LongTensor([100]).unsqueeze(0)
-        tgt_len = torch.LongTensor([len(tgt) + 2]).unsqueeze(0)
-
-        if self.origin_dset.img_transform:
-            img = self.origin_dset.img_transform(img)
-        if self.origin_dset.smiles_transform:
-            tgt = self.origin_dset.smiles_transform(tgt)
-            
         return img, tgt, tgt_len
     
     def __len__(self):
         return len(self.images)
         
-    
-def build_dataset(train_ratio, *args, **kwargs):
-    origin_dset = ImageDataset(*args, **kwargs)
-    split_idx = int(len(origin_dset) * train_ratio)
-        
-    train_dset = ImageContainer(images=origin_dset.images[:split_idx],
-                                smiles=origin_dset.smiles[:split_idx],
-                                origin_dset=origin_dset)
 
-    test_dset = ImageContainer(images=origin_dset.images[split_idx:],
-                               smiles=origin_dset.smiles[split_idx:],
-                               origin_dset=origin_dset)
-    
-    return train_dset, test_dset
-    
-
-class ImageInferenceDataset(data.Dataset):
+class ImageInferenceDataset(Dataset):
     def __init__(self, img_dir, 
                  image_files,
                  img_transform=None,

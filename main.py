@@ -10,10 +10,8 @@ import torch.optim as optim
 from model import caption
 
 import pandas as pd
-import config
 import dataset
 import train
-import processor
 import utils
 
 def main(cfg, cfg_dict):
@@ -26,38 +24,25 @@ def main(cfg, cfg_dict):
     model = caption.Caption(max_len=cfg.max_len,
                             vocab_size=len(vocab)+3,
                             encoder_model=cfg.encoder).to(cfg.device)
-
-        
     criterion = nn.CrossEntropyLoss()
-    
     optimizer = optim.AdamW(model.parameters(),
                             lr=cfg.lr,
                             weight_decay=cfg.weight_decay)
-    
     scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.T_max, eta_min=cfg.eta_min)
 
-    img_processor, smiles_processor, postprocessor = processor.get_processors(cfg, vocab)
-
-    train_dset, test_dset = dataset.build_dataset(img_dir=cfg.img_dir,
+    train_dset, test_dset = dataset.build_dataset(cfg=cfg,
+                                                  vocab=vocab,
+                                                  img_dir=cfg.img_dir,
                                                   smiles_dir=cfg.smiles_dir,
-                                                  img_transform=img_processor,
-                                                  smiles_transform=smiles_processor,
                                                   max_len=cfg.max_len,
                                                   train_ratio=cfg.train_ratio,
-                                                  test=cfg.test
-                                                 )  
+                                                  test=cfg.test)  
       
     collate_fn = utils.CollateFnFactory(cfg).get_collate_fn()
     train_dl = DataLoader(train_dset,
                           batch_size=cfg.train_batch_size,
                           shuffle=True,
                           drop_last=True,
-                          num_workers=cfg.num_workers,
-                          collate_fn=collate_fn)
-    train_test_dl = DataLoader(train_dset,
-                          batch_size=cfg.test_batch_size,
-                          shuffle=False,
-                          drop_last=False,
                           num_workers=cfg.num_workers,
                           collate_fn=collate_fn)
     test_dl = DataLoader(test_dset,
@@ -95,11 +80,9 @@ def main(cfg, cfg_dict):
                 model=model,
                 train_dl=train_dl,
                 test_dl=test_dl,
-                train_test_dl=train_test_dl,
                 criterion=criterion,
                 optimizer=optimizer,
-                scheduler=scheduler,
-                postprocessor=postprocessor)
+                scheduler=scheduler)
     
                     
 if __name__ == "__main__":
@@ -121,10 +104,3 @@ if __name__ == "__main__":
     wandb.run.save()    
     
     main(cfg, cfg_dict)
-
-
-# train test optimizer, scheduler seperately -> later
-# freezing decoder (partiall training)
-# check dataset smiles preprocessing (especially, max_len)
-# eval
-# training

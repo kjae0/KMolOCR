@@ -1,8 +1,10 @@
 from collections import OrderedDict
 
+import random
 import config
 import torch
 import os
+import numpy as np 
 
 
 class CollateFnFactory:
@@ -27,6 +29,10 @@ class CollateFnFactory:
             
             return images, labels, label_len
         return collate_fn
+
+def make_pad_mask(tgt, pad_idx):
+    mask = tgt == pad_idx
+    return mask
 
 def pack_padded_sequence(seq, cap_len):
     s = []
@@ -73,7 +79,7 @@ def seed_everything(seed):
     np.random.seed(seed)
     random.seed(seed)
 
-    # 속도 저하를 방지하기 위해 제외
+    # This setting can slow down the training process
     # torch.backends.cudnn.deterministic = True
     # torch.backends.cudnn.benchmark = False
 

@@ -85,7 +85,7 @@ class Image2SmilesPredictor:
     
     @torch.no_grad()
     def predict(self, x: torch.Tensor):
-        model.eval()
+        self.model.eval()
         
         if self.model == None:
             raise ValueError("Model not builded!")

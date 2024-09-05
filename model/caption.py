@@ -2,13 +2,6 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 
-import argparse
-import numpy as np
-import math
-import time
-import sys
-import os
-
 from model.utils import NestedTensor, nested_tensor_from_tensor_list 
 from model.encoder import create_encoder
 from model.decoder import Transformer
@@ -20,10 +13,12 @@ class FFN(nn.Module):
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
         self.layers = nn.ModuleList(nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
+        
     def forward(self, x):
         for i, layer in enumerate(self.layers):
             x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x 
+
 
 class Caption(nn.Module):
     def __init__(self, max_len, hidden_dimensions=256, vocab_size=70, input_dim=512, num_layers=6, encoder_model='resnet101'):
