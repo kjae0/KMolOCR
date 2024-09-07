@@ -10,7 +10,8 @@ import processor
 
 def build_dataset(cfg, vocab, train_ratio, *args, **kwargs):
     img_processor, smiles_processor, postprocessor = processor.get_processors(cfg, vocab)
-    origin_dset = ImageDataset(*args, **kwargs)
+    origin_dset = ImageDataset(img_transform=img_processor,
+                               smiles_transform=smiles_processor, *args, **kwargs)
     split_idx = int(len(origin_dset) * train_ratio)
         
     train_dset = Subset(images=origin_dset.images[:split_idx],
@@ -120,3 +121,4 @@ class ImageInferenceDataset(Dataset):
     
     def __len__(self):
         return len(self.images)
+    

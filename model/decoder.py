@@ -1,130 +1,15 @@
-from typing impor
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class Transformer(nn.Module):
-    def __init__(self, vocab_size=717, hidden_dim=256, pad_token_id=0, 
-                 max_position_embeddings=100, dropout=0.1, layer_norm_eps=1e-12,
-                 d_model=256, n_head=8, num_encoder_layers=3,
-                 num_decoder_layers=3, fc_dim=2048,
-                 act_fn=nn.ReLU, normalize_before=True,
-                 return_intermediate_dec=False):
-        
-        super().__init__()
-        self.encoder = TransformerEncoder(d_model=d_model,
-                                          n_head=n_head,
-                                          fc_dim=fc_dim,
-                                          dropout=dropout,
-                                          num_layers=num_encoder_layers,
-                                          act_fn=act_fn,
-                                          norm=normalize_before)
-        
-        self.embeddings = DecoderEmbeddings(vocab_size, hidden_dim, pad_token_id, max_position_embeddings, dropout, layer_norm_eps)
-        
-        self.decoder = TransformerDecoder(d_model=d_model,
-                                            n_head=n_head,
-                                            fc_dim=fc_dim,
-                                            act_fn=act_fn,
-                                            num_layers=num_decoder_layers,
-                                            dropout=dropout,
-                                            norm=normalize_before,
-                                            return_intermediate=return_intermediate_dec)
-        
-        self._reset_parameters()
-        self.d_model = d_model
-        self.n_head = n_head
-
-    def _reset_parameters(self):
-        for p in self.parameters():
-            if p.dim() > 1:
-                nn.init.xavier_uniform_(p)
-
-    def forward(self, src, mask, pos_embed, tgt, tgt_mask):
-        B, C, H, W = src.shape
-        src = src.flatten(2).permute(2, 0, 1)
-        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
-        
-        mask = mask.flatten(1)
-        
-        tgt = self.embeddings(tgt).permute(1, 0, 2)
-        query_embed = self.embeddings.position_embeddings.weight.unsqueeze(1)
-        query_embed = query_embed.repeat(1, B, 1)
-        memory = self.encoder(src, src_key_padding_mask=mask, pos=pos_embed)
-        hs = self.decoder(tgt, memory, memory_key_padding_mask=mask, tgt_key_padding_mask=tgt_mask,
-                          pos=pos_embed, query_pos=query_embed,
-                          tgt_mask=generate_square_subsequent_mask(len(tgt)).to(tgt.device))
-        return hs
-
-
-class TransformerEncoder(nn.Module):
-    def __init__(self, d_model, n_head, fc_dim, dropout, num_layers, act_fn, norm=True):
-        super().__init__()
-        self.layers = [TransformerEncoderLayer(d_model, n_head, fc_dim,dropout, act_fn, norm) for _ in range(num_layers)]
-        self.num_layers = num_layers
-        
-        if norm:
-            self.norm = nn.LayerNorm(d_model)
-        else:
-            self.norm = None
-
-    def forward(self, src,
-                mask = None,
-                src_key_padding_mask = None,
-                pos = None):
-        output = src
-
-        for layer in self.layers:
-            output = layer(output, src_mask=mask,
-                           src_key_padding_mask=src_key_padding_mask, pos=pos)
-
-        if self.norm is not None:
-            output = self.norm(output)
-
-        return output
-
-
-class TransformerDecoder(nn.Module):
-    def __init__(self, d_model, n_head, fc_dim, act_fn, num_layers, dropout, norm=True, return_intermediate=False):
-        super().__init__()
-        self.layers = [TransformerDecoderLayer(d_model, n_head, fc_dim, dropout, act_fn, norm) for _ in range(num_layers)]
-        
-        if norm:
-            self.norm = nn.LayerNorm(d_model)
-        else:
-            self.norm = None
-        self.return_intermediate = return_intermediate
-
-    def forward(self, tgt, memory,
-                tgt_mask = None,
-                memory_mask = None,
-                tgt_key_padding_mask = None,
-                memory_key_padding_mask = None,
-                pos = None,
-                query_pos = None):
-        output = tgt
-
-        intermediate = []
-
-        for layer in self.layers:
-            output = layer(output, memory, tgt_mask=tgt_mask,
-                           memory_mask=memory_mask,
-                           tgt_key_padding_mask=tgt_key_padding_mask,
-                           memory_key_padding_mask=memory_key_padding_mask,
-                           pos=pos, query_pos=query_pos)
-            if self.return_intermediate:
-                intermediate.append(self.norm(output))
-
-        if self.norm is not None:
-            output = self.norm(output)
-            if self.return_intermediate:
-                intermediate.pop()
-                intermediate.append(output)
-
-        if self.return_intermediate:
-            return torch.stack(intermediate)
-
-        return output
+def generate_square_subsequent_mask(sz):
+    """Generate a square mask for the sequence. The masked positions are filled with float('-inf').
+        Unmasked positions are filled with float(0.0).
+    """
+    mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
+    mask = mask.float().masked_fill(mask == 0, float(
+        '-inf')).masked_fill(mask == 1, float(0.0))
+    return mask
 
 
 class TransformerEncoderLayer(nn.Module):
@@ -301,11 +186,126 @@ class DecoderEmbeddings(nn.Module):
         
         return embeddings
 
-def generate_square_subsequent_mask(sz):
-    """Generate a square mask for the sequence. The masked positions are filled with float('-inf').
-        Unmasked positions are filled with float(0.0).
-    """
-    mask = (torch.triu(torch.ones(sz, sz)) == 1).transpose(0, 1)
-    mask = mask.float().masked_fill(mask == 0, float(
-        '-inf')).masked_fill(mask == 1, float(0.0))
-    return mask
+
+class TransformerEncoder(nn.Module):
+    def __init__(self, d_model, n_head, fc_dim, dropout, num_layers, act_fn, norm=True):
+        super().__init__()
+        self.layers = [TransformerEncoderLayer(d_model, n_head, fc_dim,dropout, act_fn, norm) for _ in range(num_layers)]
+        self.num_layers = num_layers
+        
+        if norm:
+            self.norm = nn.LayerNorm(d_model)
+        else:
+            self.norm = None
+
+    def forward(self, src,
+                mask = None,
+                src_key_padding_mask = None,
+                pos = None):
+        output = src
+
+        for layer in self.layers:
+            output = layer(output, src_mask=mask,
+                           src_key_padding_mask=src_key_padding_mask, pos=pos)
+
+        if self.norm is not None:
+            output = self.norm(output)
+
+        return output
+
+
+class TransformerDecoder(nn.Module):
+    def __init__(self, d_model, n_head, fc_dim, act_fn, num_layers, dropout, norm=True, return_intermediate=False):
+        super().__init__()
+        self.layers = [TransformerDecoderLayer(d_model, n_head, fc_dim, dropout, act_fn, norm) for _ in range(num_layers)]
+        
+        if norm:
+            self.norm = nn.LayerNorm(d_model)
+        else:
+            self.norm = None
+        self.return_intermediate = return_intermediate
+
+    def forward(self, tgt, memory,
+                tgt_mask = None,
+                memory_mask = None,
+                tgt_key_padding_mask = None,
+                memory_key_padding_mask = None,
+                pos = None,
+                query_pos = None):
+        output = tgt
+
+        intermediate = []
+
+        for layer in self.layers:
+            output = layer(output, memory, tgt_mask=tgt_mask,
+                           memory_mask=memory_mask,
+                           tgt_key_padding_mask=tgt_key_padding_mask,
+                           memory_key_padding_mask=memory_key_padding_mask,
+                           pos=pos, query_pos=query_pos)
+            if self.return_intermediate:
+                intermediate.append(self.norm(output))
+
+        if self.norm is not None:
+            output = self.norm(output)
+            if self.return_intermediate:
+                intermediate.pop()
+                intermediate.append(output)
+
+        if self.return_intermediate:
+            return torch.stack(intermediate)
+
+        return output
+    
+    
+
+class Transformer(nn.Module):
+    def __init__(self, vocab_size=717, hidden_dim=256, pad_token_id=0, 
+                 max_position_embeddings=100, dropout=0.1, layer_norm_eps=1e-12,
+                 d_model=256, n_head=8, num_encoder_layers=3,
+                 num_decoder_layers=3, fc_dim=2048,
+                 act_fn=nn.ReLU, normalize_before=True,
+                 return_intermediate_dec=False):
+        
+        super().__init__()
+        self.encoder = TransformerEncoder(d_model=d_model,
+                                          n_head=n_head,
+                                          fc_dim=fc_dim,
+                                          dropout=dropout,
+                                          num_layers=num_encoder_layers,
+                                          act_fn=act_fn,
+                                          norm=normalize_before)        
+        self.decoder = TransformerDecoder(d_model=d_model,
+                                            n_head=n_head,
+                                            fc_dim=fc_dim,
+                                            act_fn=act_fn,
+                                            num_layers=num_decoder_layers,
+                                            dropout=dropout,
+                                            norm=normalize_before,
+                                            return_intermediate=return_intermediate_dec)
+        self.embeddings = DecoderEmbeddings(vocab_size, hidden_dim, pad_token_id, max_position_embeddings, dropout, layer_norm_eps)
+        
+        self._reset_parameters()
+        self.d_model = d_model
+        self.n_head = n_head
+
+    def _reset_parameters(self):
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+
+    def forward(self, src, mask, pos_embed, tgt, tgt_mask):
+        B, C, H, W = src.shape
+        src = src.flatten(2).permute(2, 0, 1)
+        pos_embed = pos_embed.flatten(2).permute(2, 0, 1)
+        
+        mask = mask.flatten(1)
+        
+        tgt = self.embeddings(tgt).permute(1, 0, 2)
+        query_embed = self.embeddings.position_embeddings.weight.unsqueeze(1)
+        query_embed = query_embed.repeat(1, B, 1)
+        memory = self.encoder(src, src_key_padding_mask=mask, pos=pos_embed)
+        hs = self.decoder(tgt, memory, memory_key_padding_mask=mask, tgt_key_padding_mask=tgt_mask,
+                          pos=pos_embed, query_pos=query_embed,
+                          tgt_mask=generate_square_subsequent_mask(len(tgt)).to(tgt.device))
+        return hs
+

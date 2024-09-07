@@ -15,7 +15,7 @@ CHANNEL_DICT = {
     'efficientnet_v2_l': 1280,
 }
 
-def create_encoder(encoder_model, hidden_dimensions=512):
+def create_encoder(encoder_model):
     if encoder_model not in CHANNEL_DICT:
         raise ValueError(f"Invalid encoder model: {encoder_model}")
     
